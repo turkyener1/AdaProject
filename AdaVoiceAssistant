@@ -1,0 +1,168 @@
+import pyjokes
+import pyttsx3
+import datetime
+import speech_recognition as sr
+import wikipedia
+import webbrowser as wb
+import csv
+import requests
+import urllib.parse
+import webbrowser
+
+engine=pyttsx3.init()
+def play_youtube_song():
+    speak("What song would you like to listen to Mr. Kahraman?")
+    song_name = input("Song name: ")
+    query = urllib.parse.quote(song_name)
+    url = f"https://www.youtube.com/results?search_query={query}"
+    response = requests.get(url)
+    content = response.content.decode("utf-8")
+    start = content.find("watch?v=")
+    end = content.find("\"", start)
+    video_id = content[start:end]
+    video_url = f"https://www.youtube.com/{video_id}"
+    webbrowser.open(video_url)
+
+    speak("Now playing {song_name} on YouTube.")
+
+
+def clear_Wholecalendar():
+    open("calendar.csv", "w").close()
+
+    print("Takvim etkinlikleri temizlendi!")
+def clean_calendar():
+    today = datetime.date.today()
+    with open("calendar.csv", "r") as file:
+        reader = csv.reader(file)
+        rows = []
+        for row in reader:
+            date_str = row[0]
+            day, month, year = map(int, date_str.split("/"))
+            date = datetime.date(year, month, day)
+            if date >= today:
+                rows.append(row)
+    with open("calendar.csv", "w", newline='') as file:
+        writer = csv.writer(file)
+        for row in rows:
+            writer.writerow(row)
+            speak("Ada updated your calendar")
+def view_calendar():
+    speak("There is your calendar")
+    with open("calendar.csv", "r") as file:
+        reader = csv.reader(file)
+        for row in reader:
+            print(row)
+            speak(row)
+def calendar():
+    speak("What's your plan?")
+    plan = input("Your plan:")
+    speak("Choose a date for your plan day/month/year")
+    while True:
+        try:
+            day = int(input("Choose the day!!!"))
+            month = int(input("Choose the month!!!"))
+            year = int(input("Choose the year!!!"))
+            selected_date = datetime.date(year, month, day)
+            if selected_date < datetime.date.today():
+                speak("Try a valid date! Try again")
+            else:
+                break
+        except ValueError:
+            speak("Try a valid date! Try again")
+    with open("calendar.csv", "a") as file:
+        file.write("{}/{}/{}".format(day, month, year))
+        file.write(plan)
+        speak("Added to your calendar!")
+def stop():
+    speak("The system is stoping...")
+
+def speak(audio):
+    engine.setProperty('rate', 150)
+    engine.say(audio)
+    engine.runAndWait()
+
+def time():
+    speak("The current hour is")
+    Time=datetime.datetime.now().strftime("%I:%M:%S")
+    speak(Time)
+def date():
+    year=int(datetime.datetime.now().year)
+    month= int(datetime.datetime.now().month)
+    day= int(datetime.datetime.now().day)
+    speak("The current date is")
+    speak(day)
+    speak(month)
+    speak(year)
+def wishme():
+    speak("Welcome back Mr. Kahraman!")
+    hour = datetime.datetime.now().hour
+    if hour >= 6 and hour < 12:
+        speak("Good morning!")
+    elif hour >= 12 and hour < 18:
+        speak("Good afternoon!")
+    elif hour >= 18 and hour < 24:
+        speak("Good evening!")
+    else:
+        speak("Good night!")
+    speak("Ada is here for to help you. How can Ada help you?")
+def takeCommand():
+    r= sr.Recognizer()
+    with sr.Microphone() as source:
+        print("listening...")
+        r.pause_threshold=1
+        audio=r.listen(source)
+    try:
+        print("Analyzing...")
+        query=r.recognize_google(audio, language='en-in')
+        print(query)
+    except Exception as a:
+        print(a)
+        speak("Can you repeat it again?")
+        return "None"
+    return query
+def jokes():
+    speak(pyjokes.get_joke())
+if __name__=="__main__":
+    wishme()
+    while True:
+        query = takeCommand().lower()
+        if 'time'in query:
+            time()
+        elif 'date'in query:
+            date()
+        elif 'chrome'in query:
+            speak("What are you looking for Sir?")
+            chromepath = 'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe %s'
+            search= takeCommand().lower()
+            wb.get(chromepath).open_new_tab(search+'.com')
+        elif 'wikipedia'in query:
+            speak("Searching...")
+            query = query.replace("wikipedia","")
+            result= wikipedia.summary(query, sentences=2)
+            print(result)
+            speak(result)
+        elif 'remember that' in query:
+            speak("What should Ada remember?")
+            data= takeCommand()
+            speak("You said that to me: "+data)
+            remember = open('data.txt','w')
+            remember.write(data)
+            remember.close()
+        elif 'do you know' in query:
+            remember=open("data.txt", 'r')
+            speak("You said that to me"+remember.read())
+        elif 'add to calendar' in query:
+            calendar()
+        elif 'show the calendar' in query:
+            view_calendar()
+        elif 'edit the calendar'in query:
+            clean_calendar()
+        elif 'youtube' in query:
+            play_youtube_song()
+        elif 'joke' in query:
+            jokes()
+        elif 'clear the calendar'in query:
+            clear_Wholecalendar()
+        elif 'stop the system'in query:
+            stop()
+            break
